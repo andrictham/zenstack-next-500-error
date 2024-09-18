@@ -1,0 +1,158 @@
+import "./clerkEvents.zmodel"
+
+abstract model BaseModel {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+}
+
+/// User table, that syncs via Webhooks from Clerk
+model User {
+  /// User ID assigned by Clerk
+  id                    String               @id
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt()
+
+  hasOwnedSpaces        Space[]
+  withSpaces            Space_User[]
+  hasLists              List[]
+  hasTodos              Todo[]
+
+  // Clerk events
+  hasClerkUserEvents    ClerkUserEvents[]
+  hasClerkSessionEvents ClerkSessionEvents[]
+  /// Deleted in Clerk
+  isDeleted             Boolean              @default(false)
+  /// Timestamped by our webhook handler
+  deletedAt             DateTime?
+
+  // Everyone can sign up
+  @@allow('create', true)
+
+  // Full access by oneself
+  @@allow('all', auth().id == this.id)
+
+  // Can be read by users sharing a space with the user
+  @@allow(
+    'read', // Allow the current user to read the user of interest
+    withSpaces?[ // if the user of interest is in a space
+      space.withMembers?[ // with any of its members
+        user.id == auth().id // that include the current user
+      ]
+    ]
+  )
+}
+
+model Space extends BaseModel {
+  name        String
+  slug        String       @unique
+
+  fromOwner   User         @relation(fields: [fromOwnerId], references: [id], onDelete: Cascade)
+  fromOwnerId String       @default(auth().id)
+
+  withMembers Space_User[]
+
+  hasLists    List[]
+
+  // Require login
+  @@deny('all', auth() == null)
+
+  // Everyone can create a space
+  @@allow('create', true)
+
+  // Users in the space can read the space
+  @@allow('read', withMembers?[user.id == auth().id])
+
+  // Space admin can update and delete the space
+  @@allow('update,delete', withMembers?[user.id == auth().id && role == 'ADMIN'])
+}
+
+/// a join table for many-to-many relation between `Space` and `User`
+model Space_User extends BaseModel {
+  space   Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  spaceId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  /// A user’s role in the space. One of: ADMIN, USER
+  role    String @default("USER")
+
+  @@unique([userId, spaceId])
+
+  // Require login
+  @@deny('all', auth() == null)
+
+  // Space owner and admins have full access
+  @@allow(
+    'all', 
+    space.fromOwner.id == auth().id || // Space owner
+    space.withMembers?[user.id == auth().id && role == 'ADMIN'] // Space admin
+  )
+
+  // User can read members of spaces that he’s a member of
+  @@allow('read', space.withMembers?[user.id == auth().id])
+}
+
+model List extends BaseModel {
+  title       String
+  private     Boolean @default(false)
+
+  hasTodos    Todo[]
+
+  fromSpace   Space   @relation(fields: [fromSpaceId], references: [id], onDelete: Cascade)
+  fromSpaceId String
+
+  fromOwner   User    @relation(fields: [fromOwnerId], references: [id], onDelete: Cascade)
+  fromOwnerId String  @default(auth().id) @deny('update', true)
+
+
+  // Require login
+  @@deny('all', auth() == null)
+
+  // Do not allow a list’s owner to be changed
+  @@deny('update', future().fromOwner != fromOwner)
+
+  // Cam be read by space members if not private
+  @@allow('read', // Allow the List to be read by the current user
+    fromOwner.id == auth().id || // if the List is owned by the current user
+    (fromSpace.withMembers?[ // or if the List is from a space with any of its members
+      user.id == auth().id // that include the current user
+    ] && !private) // and the List is not private
+  )
+
+  // When creating, owner must be set to the current user, and the user must be in the space
+  @@allow('create,update', 
+    fromOwner.id == auth().id && // Owner must be the current user
+    fromSpace.withMembers?[ // and if the List is from a space with any of its members
+      user.id == auth().id // that include the current user
+    ] 
+  )
+
+  // Only the owner can delete the list
+  @@allow('delete', fromOwner.id == auth().id)
+}
+
+model Todo extends BaseModel {
+  title       String
+  description String?
+
+  completedAt DateTime?
+
+  fromList    List      @relation(fields: [fromListId], references: [id], onDelete: Cascade)
+  fromListId  String
+
+  fromOwner   User      @relation(fields: [fromOwnerID], references: [id])
+  fromOwnerID String    @default(auth().id) @deny('update', true)
+
+  // Require login
+  @@deny('all', auth() == null)
+
+  // Todo owner and list owner has full access to the todo
+  @@allow('all', fromOwner.id == auth().id || fromList.fromOwner.id == auth().id)
+
+  // Space members have full access if the parent list is not private
+  @@allow('all', // Allow all CRUD access to the todo
+    fromList.fromSpace.withMembers?[ // if the todo is from a list, from a space, with any of its members
+      user.id == auth().id // that include the current user
+    ] && !fromList.private // and the parent list is not private
+  )
+}

@@ -1,0 +1,23 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+import "./src/server/schemas/app.zmodel"
+import "./src/server/schemas/clerkEvents.zmodel"
+
+generator client {
+    provider        = "prisma-client-js"
+    previewFeatures = ["views", "relationJoins"]
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = env("DATABASE_URL")
+}
+
+plugin hooks {
+    provider = '@zenstackhq/tanstack-query'
+    target = "react"
+    output = "src/lib/hooks"
+    version = "v4"
+}
+

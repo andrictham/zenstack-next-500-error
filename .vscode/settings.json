@@ -1,0 +1,40 @@
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnSaveMode": "file",
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  },
+  "eslint.rules.customizations": [{ "rule": "*", "severity": "warn" }],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "stylelint.enable": true,
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+  "vitest.enable": true,
+  "vitest.exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/cypress/**",
+    "**/.{idea,git,cache,output,temp}/**",
+    "**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*",
+    "**/e2e/**",
+    "**/e2e-examples/**"
+  ],
+  "testing.automaticallyOpenPeekView": "never",
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "/.next/": true,
+    "**/.git": true
+  },
+  "[zmodel]": {
+    "editor.defaultFormatter": "zenstack.zenstack"
+  }
+}

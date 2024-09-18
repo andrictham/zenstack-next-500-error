@@ -1,0 +1,38 @@
+import "./app.zmodel"
+
+abstract model ClerkEvent {
+  eventID   String   @id
+  /// When the event was added to our database
+    createdAt DateTime @default(now())
+}
+
+/// Clerk user.created and user.updated events from webhooks
+model ClerkUserEvents extends ClerkEvent {
+  fromUser      User    @relation(fields: [fromUserID], references: [id])
+  fromUserID    String
+  /// When the Clerk user was created in Clerk
+  userCreatedAt Float   @omit
+  /// When the Clerk user was updated in Clerk
+  userUpdatedAt Float   @omit
+
+  primaryEmail  String
+  firstName     String
+  lastName      String
+  imageURL      String?
+  banned        Boolean
+
+  @@allow('read', auth() != null)
+}
+
+model ClerkSessionEvents extends ClerkEvent {
+  fromUser            User   @relation(fields: [fromUserID], references: [id])
+  fromUserID          String
+  sessionID           String
+  clientID            String
+  sessionStatus       String
+  sessionCreatedAt    Float
+  sessionLastActiveAt Float
+  sessionUpdatedAt    Float
+  sessionAbandonAt    Float
+  sessionExpireAt     Float
+}
