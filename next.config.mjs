@@ -1,5 +1,3 @@
-import BrowserSyncPlugin from "browser-sync-webpack-plugin";
-
 /**
  * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially useful
  * for Docker builds.
@@ -28,26 +26,6 @@ const config = {
   i18n: {
     locales: ["en"],
     defaultLocale: "en",
-  },
-
-  webpack: (config, { dev, isServer }) => {
-    const serverSideOrProd = isServer || !dev;
-    if (!serverSideOrProd)
-      config.plugins.push(
-        new BrowserSyncPlugin(
-          {
-            host: "0.0.0.0",
-            port: 4000,
-            open: false,
-            proxy: "http://localhost:3000/",
-          },
-          {
-            reload: false,
-            injectCss: false,
-          },
-        ),
-      );
-    return config;
   },
 };
 

@@ -19,8 +19,7 @@ export default clerkMiddleware(
     }
 
     return NextResponse.next();
-  },
-  { debug: process.env.NODE_ENV === "development" },
+  }
 );
 
 export const config = {
