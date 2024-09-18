@@ -1,2 +1,2 @@
-Install: `pnpm i`
-Run: `pnpm dev`
+- Install: `pnpm i`
+- Run: `pnpm dev`
